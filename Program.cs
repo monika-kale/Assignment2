@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using WebApplication2.Data; // Make sure this matches your folder
+using WebApplication2.Repositories; // Make sure this matches your folder
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 

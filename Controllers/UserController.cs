@@ -9,78 +9,66 @@ namespace WebApplication2.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly AppDbContext _db;
+        private readonly IUserRepository _userRepository;
 
-        public UserController(AppDbContext db)
+        public UserController(IUserRepository userRepository)
         {
-            _db = db;
+            _userRepository = userRepository;
         }
 
-        /// <summary>
-        /// Get user by ID
-        /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(int id)
-        {
-            var user = await _db.Users.FindAsync(id); // 👈 Fix here
-            if (user == null) return NotFound();
-            return Ok(user);
-        }
-
-        ///get all users list
         [HttpGet]
-        public async Task<IActionResult> GetAllUser()
+        public async Task<IActionResult> GetUsers()
         {
-            var user = await _db.Users.ToListAsync(); 
-            if (user == null) return NotFound();
+            var users = await _userRepository.GetAllUsersAsync();
+            return Ok(users);
+        }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUserById(int id)
+        {
+            var user = await _userRepository.GetUserByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
             return Ok(user);
         }
-
-        /// <summary>
-        /// Create new user
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] User user)
         {
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+            if (user == null)
+            {
+                return BadRequest("User data is null.");
+            }
+            await _userRepository.AddUserAsync(user);
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
         }
-       /// update user
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] User updatedUser)
         {
             if (id != updatedUser.Id)
-                return BadRequest("User ID mismatch");
-
-            var existingUser = await _db.Users.FindAsync(id);
+            {
+                return BadRequest("User ID mismatch.");
+            }
+            var existingUser = await _userRepository.GetUserByIdAsync(id);
             if (existingUser == null)
-                return NotFound();
-
-            existingUser.Username = updatedUser.Username;
-            existingUser.Email = updatedUser.Email;
-            existingUser.Password = updatedUser.Password;
-
-            _db.Users.Update(existingUser);
-            await _db.SaveChangesAsync();
-
-            return Ok(existingUser);
+            {
+                return NotFound("User not found.");
+            }
+            await _userRepository.UpdateUserAsync(updatedUser);
+            return NoContent();
         }
-
-        ///delete user 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = await _db.Users.FindAsync(id);
+            var user = await _userRepository.GetUserByIdAsync(id);
             if (user == null)
-                return NotFound();
-
-            _db.Users.Remove(user);
-            await _db.SaveChangesAsync();
-
-            return NoContent(); // 204 No Content
+            {
+                return NotFound("User not found.");
+            }
+            await _userRepository.DeleteUserAsync(id);
+            return NoContent();
         }
+        
     }
 
-    
 }
